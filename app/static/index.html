@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vegas Leilões — Pesquisa jurídica</title>
+  <link rel="icon" href="/static/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/" aria-label="Vegas Leilões — início">
+      <img src="/static/logo.png" alt="" width="40" height="40">
+      <span class="brand-text"><strong>VEGAS LEILÕES</strong><small>A CERTEZA DO MELHOR NEGÓCIO</small></span>
+    </a>
+    <nav class="tabs" role="tablist" aria-label="Seções">
+      <button role="tab" data-tab="pesquisa" aria-selected="true">Pergunte à IA</button>
+      <button role="tab" data-tab="fontes" aria-selected="false">Fontes</button>
+      <button role="tab" data-tab="coletas" aria-selected="false">Coletas</button>
+      <button role="tab" data-tab="acervo" aria-selected="false">Acervo</button>
+      <button role="tab" data-tab="auditoria" aria-selected="false">Auditoria</button>
+    </nav>
+    <span class="status-line" id="status-line">Carregando…</span>
+  </header>
+  <div id="mode-banner" class="mode-banner"></div>
+  <main>
+    <section id="tab-pesquisa" role="tabpanel">
+      <div class="hero">
+        <h1 class="headline">Sua próxima pesquisa começa aqui.</h1>
+        <p class="lead">Pergunte à IA: ela procura seus termos em despachos e decisões de juízes de todo o
+          Estado de São Paulo — e, se você citar uma cidade, só nela.</p>
+      </div>
+      <div id="chat" class="chat" aria-live="polite"></div>
+      <form id="ask-form" class="composer" autocomplete="off">
+        <div class="composer-box">
+          <textarea id="ask" rows="1" maxlength="2000" aria-label="Pergunta"
+                    placeholder='Pergunte… ex.: procure "defiro o pedido" em Campinas'></textarea>
+          <button id="btn-ask" class="send" type="submit" aria-label="Enviar pergunta">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="grid-form">
+          <label>Data inicial<input type="date" id="f-from"></label>
+          <label>Data final<input type="date" id="f-to"></label>
+        </div>
+        <p class="help">Mostra apenas <b>DESPACHO</b> e <b>DECISÃO DO JUIZ</b>. Também dá para escrever a data na pergunta:
+          procure "defiro o pedido" de 01/09/2026 a 30/09/2026</p>
+        <div class="chips" id="parse-preview" aria-live="polite"></div>
+        <div class="err-box" id="parse-error" role="alert"></div>
+        <div class="examples">
+          <button type="button" class="pill light" data-ex='procure "defiro o pedido" em Campinas'>
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M14.5 3.5l6 6M12 6l6 6M9.5 8.5l6 6M13 4.5l-6.5 6.5M18.5 10l-6.5 6.5M9.5 13.5L3 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span><small>EXEMPLO</small><b>"defiro o pedido" em Campinas</b></span>
+          </button>
+          <button type="button" class="pill dark" data-ex='busque "tutela de urgência" e alvará em Santos'>
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M20 11.5a8 8 0 01-11.8 7L4 20l1.4-4A8 8 0 1120 11.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            <span><small>EXEMPLO</small><b>tutela de urgência em Santos</b></span>
+          </button>
+        </div>
+        <details class="filters">
+          <summary>Opções da pesquisa</summary>
+          <div class="options">
+            <label><input type="checkbox" id="opt-online" checked> Consultar as fontes de SP agora (busca documentos novos)</label>
+            <label>máx. páginas por fonte/termo <input type="number" id="opt-pages" min="1" max="200" value="3" class="num-input"></label>
+            <label><input type="checkbox" id="opt-fold"> Ignorar acentos</label>
+          </div>
+          <p class="help">Entre aspas = frase exata (palavras juntas, na mesma ordem). Sem aspas = parte de palavra
+            (<i>defer</i> encontra deferido e indeferimento). Cada termo é pesquisado separadamente. Para limitar a uma
+            cidade, termine com "em &lt;cidade&gt;" ou "cidade: &lt;cidade&gt;".</p>
+        </details>
+        <div class="recent hidden" id="recent"><span>Recentes</span><div id="history" class="chips"></div></div>
+      </form>
+    </section>
+
+    <section id="tab-fontes" role="tabpanel" class="hidden">
+      <div class="panel">
+        <h2>Fontes cadastradas</h2>
+        <p class="help">Somente o conteúdo efetivamente coletado é pesquisado. O estado de cada fonte reflete a
+          última verificação real.</p>
+        <div id="sources-list"></div>
+        <h3>Nova fonte</h3>
+        <form id="source-form" class="grid-form"></form>
+      </div>
+    </section>
+
+    <section id="tab-coletas" role="tabpanel" class="hidden">
+      <div class="panel">
+        <h2>Coletas</h2>
+        <div class="table-wrap"><table class="data" id="collections"></table></div>
+      </div>
+    </section>
+
+    <section id="tab-acervo" role="tabpanel" class="hidden">
+      <div class="panel">
+        <h2>Enviar arquivos (PDF, HTML, TXT)</h2>
+        <p class="help">Use para cadernos do DEJT, acórdãos baixados manualmente e outros documentos de SP. Os
+          metadados abaixo são opcionais e ficam registrados como informados por você.</p>
+        <form id="upload-form" class="grid-form">
+          <label>Arquivos<input type="file" name="files" multiple accept=".pdf,.html,.htm,.txt" required></label>
+          <label>Tribunal<select name="tribunal"><option value="">Não informado</option><option>TJSP</option><option>TRT15</option></select></label>
+          <label>Número do processo<input name="processo" maxlength="40"></label>
+          <label>Cidade (município de SP)<input name="cidade" maxlength="80"></label>
+          <label>Tipo de ato<select name="tipo_ato"><option value="">Não informado (não aparece nas pesquisas)</option>
+            <option>Despacho</option><option>Decisão</option><option>Sentença</option><option>Outro</option></select></label>
+          <label>Data de disponibilização<input type="date" name="data_disponibilizacao"></label>
+          <label>Data de publicação<input type="date" name="data_publicacao"></label>
+          <label>Data da decisão<input type="date" name="data_decisao"></label>
+          <label>URL da publicação<input name="url_publicacao" maxlength="500"></label>
+          <label>&nbsp;<button class="btn primary" type="submit">Enviar e processar</button></label>
+        </form>
+        <div id="upload-result"></div>
+      </div>
+      <div class="panel">
+        <h2>Documentos no acervo</h2>
+        <div class="toolbar"><label>Fonte <select id="doc-source"></select></label>
+          <label>Estado <select id="doc-status"><option value="">Todos</option><option value="completo">Completo</option><option value="parcial">Parcial</option><option value="falha">Falha</option></select></label></div>
+        <div class="table-wrap"><table class="data" id="documents"></table></div>
+        <div class="pager" id="doc-pager"></div>
+      </div>
+    </section>
+
+    <section id="tab-auditoria" role="tabpanel" class="hidden">
+      <div class="panel">
+        <h2>Registro de auditoria</h2>
+        <div class="table-wrap"><table class="data" id="audit"></table></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="dlg">
+    <div class="dlg-head"><h3 id="dlg-title"></h3><span id="dlg-tools"></span><button class="btn small" id="dlg-close">Fechar</button></div>
+    <div class="dlg-body" id="dlg-body"></div>
+  </dialog>
+</body>
+</html>
